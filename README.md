@@ -112,9 +112,28 @@ The progression from NCA-LM (establishing that local dynamics work) through PFN 
 
 The search engine draws from a library of 45 atomic modules (`architectures/primitives.py`), all satisfying the interface `forward(x) -> x` where `x` is `(B, L, D)`:
 
-**Propagation mechanisms (34):** Depthwise convolutions (k=3,5,7,9,15,31), dilated convolutions (d=1,2,4,8,16,32,64), GatedShiftMixer variants (4 shift configurations), spectral filter (FFT), diagonal state space model (S4-style), random sparse wiring, butterfly mixer, hierarchical pool+broadcast (stride 2,4,8), exponential moving average, wavelet mixer, LSH local exchange, cellular automata (radius 1,2,3), strided conv up/down (stride 2,4), Sinkhorn permutation, long convolution (frequency domain).
+**Propagation mechanisms (37):** Depthwise convolutions (k=3,5,7,9,15,31), dilated convolutions (d=1,2,4,8,16,32,64), GatedShiftMixer variants (4 shift configurations), spectral filter (FFT), diagonal state space model (S4-style), random sparse wiring, butterfly mixer, hierarchical pool+broadcast (stride 2,4,8), exponential moving average, wavelet mixer, LSH local exchange, cellular automata (radius 1,2,3), strided conv up/down (stride 2,4), Sinkhorn permutation, long convolution (frequency domain), **HDC binding**, **episodic LSH cache** (2 variants).
 
-**State update mechanisms (11):** SwiGLU, GeGLU, ReGLU, highway gating, conv-GRU, residual MLP (depth 1,2), squeeze-excite, per-channel scale, polynomial activation, stochastic depth.
+**State update mechanisms (13):** SwiGLU, GeGLU, ReGLU, highway gating, conv-GRU, residual MLP (depth 1,2), squeeze-excite, per-channel scale, polynomial activation, stochastic depth, **dynamic time-scale gating** (2 variants).
+
+## Phase 3: Seeker Field Network
+
+Building on the search findings, the **Seeker Field Network** introduces three radical O(L) mechanisms designed to overcome information bottlenecking at 100K+ token scales:
+
+| Mechanism | Purpose | How It Works |
+|---|---|---|
+| **DynamicTimeScaleGating** | Data-dependent forgetting | Input structural entropy controls update rate. Low-info tokens freeze state; high-density tokens overwrite it. |
+| **HDCBinding** | Lossless structural folding | Circular convolution in frequency domain (HDC) binds information orthogonally. Exact retrieval via unbinding even after 50K+ tokens. |
+| **EpisodicLSHCache** | O(1) resonance memory | Decoupled LSH hash-bucket memory bank. Hash collisions enable direct past-state retrieval without attention. |
+| **PhaseRouter** | Dynamic primitive routing | Replaces rigid `nn.Sequential` — data routes itself through primitives based on learned phase synchronization. |
+
+All mechanisms are fully differentiable, attention-free (no QKV, no softmax over sequence lengths), and O(L) in time/memory.
+
+```
+architectures/seeker_field_network.py   # SeekerFieldNetwork model
+architectures/primitives.py             # +4 new primitives (48 total)
+tests/test_seeker_field_network.py      # 26/26 tests passing
+```
 
 ## Limitations
 
@@ -137,9 +156,10 @@ attention-free-sequence-model/
 │   ├── afn_v1.py                 # Attempt 5a: Adaptive Field Network v1 (failed)
 │   ├── afn_v2.py                 # Attempt 5b: v2 with SqueezeExcite (failed)
 │   ├── afn_v3.py                 # Attempt 5c: v3 with GatedShiftMixer (succeeded)
-│   ├── primitives.py             # 45 atomic mechanism modules for search
+│   ├── primitives.py             # 48 atomic mechanism modules for search
 │   ├── search_engine.py          # Automated architecture search (3000 trials)
-│   └── best_discovered.py        # Best architecture from search (arch_2334)
+│   ├── best_discovered.py        # Best architecture from search (arch_2334)
+│   └── seeker_field_network.py   # Seeker Field Network (Phase 3)
 ├── tests/
 │   ├── test_fractal_gnn_original.py
 │   ├── test_hfn.py
@@ -148,7 +168,8 @@ attention-free-sequence-model/
 │   ├── test_pfn.py
 │   ├── test_afn_v1.py
 │   ├── test_afn_v3.py
-│   └── test_best_discovered.py   # 15/15 pass
+│   ├── test_best_discovered.py   # 15/15 pass
+│   └── test_seeker_field_network.py  # 26/26 pass
 ├── benchmarks/
 │   ├── final_benchmark.py        # AFN v3 vs Transformer
 │   ├── fair_bench.py             # 3-way: AFN v1 vs NCA vs Transformer
