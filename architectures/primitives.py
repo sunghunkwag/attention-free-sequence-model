@@ -757,32 +757,40 @@ class EpisodicLSHCache(nn.Module):
         self.norm = nn.LayerNorm(d_model)
 
     def _lsh_hash(self, x):
-        """Compute soft LSH bucket assignments using random hyperplane hashing.
+        """Hard LSH bucket assignments via Straight-Through Estimator.
 
-        Instead of hard sign() (which blocks gradients), we use a
-        temperature-scaled sigmoid as a differentiable approximation.
-        At low temperature this approaches hard hashing; at moderate
-        temperature it allows gradient flow.
+        Forward pass: strictly binary (0.0 or 1.0) bucket assignments.
+        Each token is assigned to exactly the top-1 bucket per hash function
+        via argmax one-hot encoding. Zero leakage into unassigned buckets.
+
+        Backward pass: gradients flow through the soft sigmoid surrogate
+        via the STE identity trick, bypassing the non-differentiable
+        discrete argmax.
 
         Args:
             x: (B, L, D) input keys
         Returns:
-            bucket_scores: (B, L, n_hashes, n_buckets) soft bucket assignments
+            bucket_scores: (B, L, n_hashes, n_buckets) binary assignments
         """
         keys = self.key_proj(x)  # (B, L, D)
 
-        # Project through random hyperplanes: (B, L, D) @ (n_hashes, D, n_buckets)
-        # → (B, L, n_hashes, n_buckets)
-        # Use einsum for clarity
-        # hash_planes: (n_hashes, D, n_buckets)
-        # keys: (B, L, D)
-        # We want: (B, L, n_hashes, n_buckets)
+        # Project through random hyperplanes
+        # hash_planes: (n_hashes, D, n_buckets), keys: (B, L, D)
+        # scores: (B, L, n_hashes, n_buckets)
         scores = torch.einsum('ild,hdj->ilhj', keys, self.hash_planes)
 
-        # Soft bucket assignment via steep sigmoid (temperature=0.1)
-        # This approximates hard hashing while remaining differentiable.
-        # The steep sigmoid means tokens strongly activate ~1 bucket per hash.
-        bucket_scores = torch.sigmoid(scores * 10.0)  # (B, L, n_hashes, n_buckets)
+        # --- Soft surrogate for backward pass ---
+        soft_scores = torch.sigmoid(scores * 10.0)  # (B, L, H, Nb)
+
+        # --- Hard discrete assignment for forward pass ---
+        # Top-1 argmax per hash function → one-hot binary vector
+        # Each token activates exactly 1 bucket per hash. No leakage.
+        hard_indices = scores.argmax(dim=-1, keepdim=True)  # (B, L, H, 1)
+        hard_assignments = torch.zeros_like(scores).scatter_(-1, hard_indices, 1.0)
+
+        # --- STE: binary forward, smooth backward ---
+        # Gradient of hard_assignments w.r.t. parameters = gradient of soft_scores
+        bucket_scores = (hard_assignments - soft_scores).detach() + soft_scores
 
         return bucket_scores
 
