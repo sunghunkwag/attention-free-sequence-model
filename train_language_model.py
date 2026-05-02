@@ -297,7 +297,7 @@ def train(config: TrainConfig) -> None:
         model.parameters(), lr=config.lr, weight_decay=config.weight_decay
     )
     amp_enabled = device.type == "cuda"
-    scaler = torch.amp.GradScaler("cuda", enabled=amp_enabled)
+    scaler = torch.amp.GradScaler(device.type, enabled=amp_enabled)
 
     metadata = {
         "config": asdict(config),

@@ -36,9 +36,9 @@ class AFN4Layer(nn.Module):
         h = self.norm1(x)
         for _ in range(self.nca_steps):
             h = self.nca(h)
-        x = x + (h - self.norm1(x))
+        x = x + h
         x = x + self.fourier(self.norm2(x))
-        x = self.se(self.norm3(x))
+        x = x + self.se(self.norm3(x))
         x = x + self.coarse(self.norm4(x))
         return self.ffn(x)
 
