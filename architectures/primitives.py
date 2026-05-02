@@ -15,6 +15,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def stable_exp_decay_kernel(decay: torch.Tensor, length: int) -> torch.Tensor:
+    """Numerically stable per-channel exponential decay kernel used by recurrence primitives."""
+    steps = torch.arange(length, device=decay.device, dtype=decay.dtype).unsqueeze(-1)
+    log_decay = torch.log(decay.clamp(min=1e-6, max=1-1e-6)).unsqueeze(0)
+    return torch.exp(steps * log_decay)
+
+
 # =========================================================================
 # INFORMATION PROPAGATION MECHANISMS
 # =========================================================================
@@ -110,7 +117,8 @@ class DiagonalSSM(nn.Module):
         # Parallel scan via cumulative powers of A
         # h_t = A^t * h_0 + sum_{k=0}^{t} A^{t-k} * Bx_k
         # Use conv1d with exponentially decaying kernel as fast approximation
-        powers = A.unsqueeze(0).unsqueeze(0) ** torch.arange(L, device=x.device).float().unsqueeze(-1).unsqueeze(0)  # (1, L, D)
+        decay = torch.exp(A).clamp(min=1e-5, max=1-1e-5)
+        powers = stable_exp_decay_kernel(decay, L).unsqueeze(0)  # (1, L, D)
         # Flip for causal convolution
         kernel = powers.permute(2, 0, 1)  # (D, 1, L)
         Bx_t = Bx.transpose(1, 2)  # (B, D, L)
@@ -202,7 +210,7 @@ class ExponentialMovingAverage(nn.Module):
         alpha = torch.sigmoid(self.decay_logit)  # (D,)
         # Parallel EMA via conv1d with exponentially decaying kernel
         one_minus_alpha = 1 - alpha
-        powers = alpha.unsqueeze(0) ** torch.arange(L, device=x.device).float().unsqueeze(-1)  # (L, D)
+        powers = stable_exp_decay_kernel(alpha, L)  # (L, D)
         kernel = (one_minus_alpha.unsqueeze(0) * powers).permute(1, 0).unsqueeze(1)  # (D, 1, L)
         x_t = x.transpose(1, 2)  # (B, D, L)
         ema = F.conv1d(x_t, kernel, padding=L - 1, groups=D)[:, :, :L]  # (B, D, L)
