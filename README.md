@@ -217,3 +217,18 @@ No other dependencies. Zero external libraries in model code.
 ## License
 
 MIT
+## Changelog
+
+### 2026-05-02
+- **Add attention-free language modeling trainer**: New `train_language_model.py` script for end-to-end language modeling experiments.
+
+### 2026-03-28
+- **Replace soft sigmoid LSH hashing with hard STE for zero bucket leakage**: Hard Straight-Through Estimator eliminates bucket leakage in LSH routing.
+- **Add Seeker Field Network with three radical O(L) mechanisms**: Phase 3 architecture introducing DynamicTimeScaleGating, HDCBinding, EpisodicLSHCache, and PhaseRouter.
+- **Update README with Seeker Field Network (Phase 3)**: Documentation updated.
+- **Merge PR #3, #4, #5**: Refactor sequence model (AZHOG branch).
+
+### 2026-03-27
+- **Architecture search: 3000 trials, best discovered beats AFN v3 on all 3 tasks**: Phase 2 completed with `arch_2334` achieving 97.6% average accuracy vs 64.8% (Transformer) and 81.0% (AFN v3).
+- **Update README with architecture search results and mechanism analysis**: Benchmark tables and mechanism breakdown added.
+- **Initial commit**: 5 attention-free architectures (4 failures + 1 success AFN v3), primitives, tests, and benchmarks.
