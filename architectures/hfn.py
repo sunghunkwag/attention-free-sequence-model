@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Hierarchical Fractal Network (HFN)
 ===================================
 O(L)-complexity sequence model built on hierarchical multi-scale

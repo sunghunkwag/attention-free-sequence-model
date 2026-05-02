@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Fractal GNN Block — Hierarchical chunk-wise pooling with graph convolution
 and gated residual feedback to the token level.
 

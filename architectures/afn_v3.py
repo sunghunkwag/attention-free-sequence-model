@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 AFN v3 — adds GatedShiftMixer for content-preserving long-range transfer.
 
 v2 failure: diffusion blurs content. SqueezeExcite loses identity.
@@ -14,6 +14,7 @@ from typing import Sequence
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from architectures.primitives import GatedShiftMixerVariant as GatedShiftMixer
 
 
 class PerceptionFilter(nn.Module):
@@ -62,62 +63,6 @@ class NCAStep(nn.Module):
         self.diffuse=MultiRateDiffusion(d,dilations)
     def forward(self, x):
         return self.diffuse(self.react(x, self.perceive(x)))
-
-
-class GatedShiftMixer(nn.Module):
-    """Content-preserving long-range transfer via gated shift register.
-    
-    Creates shifted copies of the input at fixed offsets.
-    Each position selects which shifts to accept based on its content.
-    
-    Unlike attention:
-    - No Q/K/V projections
-    - No softmax
-    - Fixed wiring (shift offsets are hardcoded, not learned)
-    - Selection is per-channel gating, not per-token weighting
-    
-    Like attention:
-    - Content at position i can directly access content at position i±offset
-    - No information loss from mixing/averaging
-    
-    O(L · n_shifts · D) — linear in L.
-    """
-    def __init__(self, d_model: int, shifts: Sequence[int] = (-32,-16,-4,-1,1,4,16,32)):
-        super().__init__()
-        self.shifts = list(shifts)
-        n = len(shifts) + 1  # +1 for self
-        
-        # Content-dependent gate: which shifts to listen to
-        self.gate_proj = nn.Linear(d_model, n * d_model, bias=False)
-        
-        # Value projection per shift (lightweight)
-        self.value_proj = nn.Linear(d_model, d_model, bias=False)
-        
-        self.norm = nn.LayerNorm(d_model)
-        self.n = n
-    
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """x: (B, L, D) → (B, L, D)"""
-        B, L, D = x.shape
-        
-        # Create shifted copies
-        shifted = [x]  # self
-        for s in self.shifts:
-            shifted.append(torch.roll(x, shifts=-s, dims=1))
-        
-        # Stack: (B, L, n, D)
-        stacked = torch.stack(shifted, dim=2)
-        
-        # Project values
-        stacked = self.value_proj(stacked)  # (B, L, n, D)
-        
-        # Content-dependent gates: (B, L, n*D) → reshape → (B, L, n, D)
-        gates = torch.sigmoid(self.gate_proj(x)).reshape(B, L, self.n, D)
-        
-        # Gated selection
-        out = (stacked * gates).sum(dim=2)  # (B, L, D)
-        
-        return self.norm(out)
 
 
 class SqueezeExcite(nn.Module):

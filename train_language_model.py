@@ -56,6 +56,8 @@ class TrainConfig:
     seed: int = 42
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
     save_every_epoch: bool = False
+    early_stopping_patience: int = 5
+    dry_run: bool = False
 
 
 class CharacterTokenizer:
@@ -294,6 +296,8 @@ def train(config: TrainConfig) -> None:
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=config.lr, weight_decay=config.weight_decay
     )
+    amp_enabled = device.type == "cuda"
+    scaler = torch.amp.GradScaler(device.type, enabled=amp_enabled)
 
     metadata = {
         "config": asdict(config),
@@ -304,6 +308,22 @@ def train(config: TrainConfig) -> None:
     (output_dir / "config.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     best_valid_loss = float("inf")
+    patience_counter = 0
+    if config.dry_run:
+        model.train()
+        x, y = next(iter(train_loader))
+        x = x.to(device); y = y.to(device)
+        optimizer.zero_grad(set_to_none=True)
+        with torch.amp.autocast("cuda", enabled=amp_enabled):
+            logits = model(x)
+            loss = compute_loss(logits, y)
+        scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+        grad_norm = nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+        scaler.step(optimizer); scaler.update()
+        print(f"dry_run_ok loss={loss.item():.4f} grad_norm={float(grad_norm):.4f}")
+        return
+
     for epoch in range(1, config.epochs + 1):
         model.train()
         start_time = time.time()
@@ -313,13 +333,15 @@ def train(config: TrainConfig) -> None:
         for step, (x, y) in enumerate(train_loader, start=1):
             x = x.to(device)
             y = y.to(device)
-            logits = model(x)
-            loss = compute_loss(logits, y)
-
             optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
-            optimizer.step()
+            with torch.amp.autocast("cuda", enabled=amp_enabled):
+                logits = model(x)
+                loss = compute_loss(logits, y)
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            grad_norm = nn.utils.clip_grad_norm_(model.parameters(), config.grad_clip)
+            scaler.step(optimizer)
+            scaler.update()
 
             total_loss += float(loss.item()) * y.numel()
             total_tokens += int(y.numel())
@@ -329,7 +351,7 @@ def train(config: TrainConfig) -> None:
                 print(
                     f"epoch={epoch} step={step} "
                     f"train_loss={mean_train_loss:.4f} "
-                    f"train_ppl={math.exp(min(mean_train_loss, 20.0)):.2f}"
+                    f"train_ppl={math.exp(min(mean_train_loss, 20.0)):.2f} grad_norm={float(grad_norm):.4f}"
                 )
 
         train_loss = total_loss / max(total_tokens, 1)
@@ -354,7 +376,13 @@ def train(config: TrainConfig) -> None:
             torch.save(checkpoint, output_dir / f"epoch_{epoch:03d}.pt")
         if valid_metrics["loss"] < best_valid_loss:
             best_valid_loss = valid_metrics["loss"]
+            patience_counter = 0
             torch.save(checkpoint, output_dir / "best.pt")
+        else:
+            patience_counter += 1
+            if patience_counter >= config.early_stopping_patience:
+                print(f"early_stopping epoch={epoch} patience={config.early_stopping_patience}")
+                break
 
 
 def parse_args() -> TrainConfig:
@@ -376,6 +404,8 @@ def parse_args() -> TrainConfig:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--save-every-epoch", action="store_true")
+    parser.add_argument("--early-stopping-patience", type=int, default=5)
+    parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     return TrainConfig(**vars(args))
 
