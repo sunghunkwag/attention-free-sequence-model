@@ -190,7 +190,7 @@ attention-free-sequence-model/
 ## Quick Start
 
 ```bash
-pip install torch pytest
+pip install -r requirements.txt
 
 # Run all tests
 pytest tests/ -v
@@ -204,6 +204,9 @@ python benchmarks/search_benchmark.py
 # Run deterministic benchmark suite
 bash benchmarks/run_benchmarks.sh
 
+# Experimental smoke benchmark (diagnostic only; not production-grade)
+python benchmarks/experimental_benchmark.py --steps 20 --batch-size 8 --seed 42
+
 # Dry-run the language model pipeline (data/model/fwd/bwd/step)
 python train_language_model.py --data-path /path/to/text.txt --dry-run
 
@@ -216,14 +219,17 @@ python -m architectures.search_engine --n_trials 3000
 - Python 3.10+
 - PyTorch 2.0+
 - pytest (for tests)
+- NumPy (explicit runtime dependency for some PyTorch execution paths)
 
-No other dependencies. Zero external libraries in model code.
+Model architecture code remains PyTorch-only (no additional model-framework dependencies).
 
 ## Scope
 
 **This is:** An experimental exploration of attention-free sequence modeling. A documented trail of 4 manual failures, 1 manual success, and an automated search that discovered a superior mechanism combination. Evidence that GatedShiftMixer, while effective, is not the only path to content-preserving long-range transfer without attention.
 
 **This is not:** A Transformer replacement. A production-ready architecture. A claim of general superiority. A validated language model.
+
+Benchmark artifacts in `benchmarks/` are experimental smoke diagnostics and should not be interpreted as evidence of general model superiority.
 
 ## License
 
