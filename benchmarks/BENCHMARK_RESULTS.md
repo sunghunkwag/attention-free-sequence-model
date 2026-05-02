@@ -1,9 +1,17 @@
-# Benchmark Results
+# Benchmark Results (Experimental, Small-Scale)
 
-| Model | Params | Perplexity | Throughput (tok/s) | Peak Memory (MB) |
-|---|---:|---:|---:|---:|
-| best_discovered | 1,271,296 | 3.91 | 51000 | 612 |
-| afn_v3 | 1,305,472 | 4.08 | 48600 | 640 |
-| afn_v4 [EXPERIMENTAL] | 1,338,240 | 3.97 | 52200 | 628 |
+This file intentionally avoids static metric tables that cannot be reproduced from current repository code.
 
-Notes: results captured with seed=42 and the deterministic benchmark runner in `benchmarks/run_benchmarks.sh`.
+Use the benchmark runner below to generate fresh results locally:
+
+```bash
+python benchmarks/experimental_benchmark.py --steps 20 --batch-size 8 --seed 42
+```
+
+The runner writes:
+- `benchmarks/generated/experimental_results.json`
+- `benchmarks/generated/experimental_results.md`
+
+Notes:
+- Results are **experimental** and **small-scale** smoke measurements only.
+- AFN v4 is included only when instantiated by the runner itself.
