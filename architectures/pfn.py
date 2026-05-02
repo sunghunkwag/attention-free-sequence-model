@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Particle Field Network (PFN)
 =============================
 Lagrangian sequence model. No tokens. No attention. No fixed grid.
