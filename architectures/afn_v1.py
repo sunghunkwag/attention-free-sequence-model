@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Adaptive Field Network (AFN)
 ==============================
 Combines the proven components from today's experiments:

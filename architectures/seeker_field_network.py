@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Seeker Field Network — O(L) sequence model with exact retrieval capabilities.
 
 Replaces the static BestDiscovered (arch_2334) pipeline with a dynamically

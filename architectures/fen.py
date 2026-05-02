@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Fractal Equilibrium Network (FEN)
 ==================================
 Iterative cross-scale sequence model inspired by multi-grid V-cycle solvers.

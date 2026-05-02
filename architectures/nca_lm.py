@@ -1,4 +1,4 @@
-"""
+"""[EXPERIMENTAL] 
 Neural Cellular Automata Language Model (NCA-LM)
 =================================================
 Zero attention. Zero softmax. Zero transformer components.

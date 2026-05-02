@@ -155,8 +155,9 @@ attention-free-sequence-model/
 │   ├── pfn.py                    # Attempt 4: Particle Field Network (failed)
 │   ├── afn_v1.py                 # Attempt 5a: Adaptive Field Network v1 (failed)
 │   ├── afn_v2.py                 # Attempt 5b: v2 with SqueezeExcite (failed)
-│   ├── afn_v3.py                 # Attempt 5c: v3 with GatedShiftMixer (succeeded)
-│   ├── primitives.py             # 48 atomic mechanism modules for search
+│   ├── afn_v3.py                 # Attempt 5c: v3 with shared GatedShiftMixer primitive
+│   ├── afn_v4.py                 # Attempt 5d: Fourier-gated AFN variant [EXPERIMENTAL]
+│   ├── primitives.py             # atomic mechanism modules + stable recurrence kernels
 │   ├── search_engine.py          # Automated architecture search (3000 trials)
 │   ├── best_discovered.py        # Best architecture from search (arch_2334)
 │   └── seeker_field_network.py   # Seeker Field Network (Phase 3)
@@ -167,7 +168,11 @@ attention-free-sequence-model/
 │   ├── test_nca_lm.py
 │   ├── test_pfn.py
 │   ├── test_afn_v1.py
+│   ├── test_afn_v2.py
 │   ├── test_afn_v3.py
+│   ├── test_afn_v4.py
+│   ├── test_primitives_functional.py
+│   ├── test_search_engine.py
 │   ├── test_best_discovered.py   # 15/15 pass
 │   └── test_seeker_field_network.py  # 26/26 pass
 ├── benchmarks/
@@ -196,6 +201,12 @@ python benchmarks/final_benchmark.py
 # Run the full benchmark (Best Discovered vs AFN v3 vs Transformer)
 python benchmarks/search_benchmark.py
 
+# Run deterministic benchmark suite
+bash benchmarks/run_benchmarks.sh
+
+# Dry-run the language model pipeline (data/model/fwd/bwd/step)
+python train_language_model.py --data-path /path/to/text.txt --dry-run
+
 # Re-run the architecture search (takes ~85 minutes on CPU)
 python -m architectures.search_engine --n_trials 3000
 ```
@@ -220,6 +231,9 @@ MIT
 ## Changelog
 
 ### 2026-05-02
+- **Add AFN v4 + shared primitive consolidation**: Introduced `architectures/afn_v4.py`, reused shared `GatedShiftMixer` primitive in AFN v3, and stabilized recurrence kernels in `primitives.py`.
+- **Harden language model trainer**: `train_language_model.py` now supports AMP, gradient-norm logging, `--early-stopping-patience`, and `--dry-run`.
+- **Expand test and benchmark reproducibility**: Added AFN v2/v4 + primitive/search tests and deterministic benchmark runner with recorded results manifest.
 - **Add attention-free language modeling trainer**: New `train_language_model.py` script for end-to-end language modeling experiments.
 
 ### 2026-03-28
