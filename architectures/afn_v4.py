@@ -15,7 +15,7 @@ class FourierGateMixer(nn.Module):
         xf = torch.fft.rfft(x.transpose(1, 2), dim=-1)
         g = torch.sigmoid(self.freq_gate[: xf.shape[-1], :].transpose(0, 1)).unsqueeze(0)
         y = torch.fft.irfft(xf * g, n=l, dim=-1).transpose(1, 2)
-        return x + self.norm(y)
+        return self.norm(y)
 
 
 class AFN4Layer(nn.Module):
@@ -37,7 +37,8 @@ class AFN4Layer(nn.Module):
         for _ in range(self.nca_steps):
             h = self.nca(h)
         x = x + h
-        x = x + self.fourier(self.norm2(x))
+        update = self.fourier(self.norm2(x))
+        x = x + update
         x = x + self.se(self.norm3(x))
         x = x + self.coarse(self.norm4(x))
         return self.ffn(x)

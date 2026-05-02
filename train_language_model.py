@@ -273,7 +273,7 @@ def train(config: TrainConfig) -> None:
         train_dataset,
         batch_size=config.batch_size,
         shuffle=True,
-        drop_last=True,
+        drop_last=False,
         collate_fn=collate_batch,
     )
     valid_loader = DataLoader(
@@ -310,6 +310,11 @@ def train(config: TrainConfig) -> None:
     best_valid_loss = float("inf")
     patience_counter = 0
     if config.dry_run:
+        if len(train_loader) == 0:
+            raise ValueError(
+                "Dry-run requires at least one training batch. "
+                "Use a larger corpus, smaller seq_len, or smaller batch_size."
+            )
         model.train()
         x, y = next(iter(train_loader))
         x = x.to(device); y = y.to(device)
