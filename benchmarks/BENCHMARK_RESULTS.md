@@ -13,5 +13,8 @@ The runner writes:
 - `benchmarks/generated/experimental_results.md`
 
 Notes:
-- Results are **experimental** and **small-scale** smoke measurements only.
+- Results are **experimental** and **small-scale** **smoke benchmark only** measurements.
+- This benchmark is intended as a **diagnostic** check for local behavior, not a production evaluation.
+- Outputs here are **not production-grade** performance claims.
+- These results are **not evidence of general model superiority**.
 - AFN v4 is included only when instantiated by the runner itself.
