@@ -1,0 +1,65 @@
+{
+  "$schema": "https://fundingjson.org/schema/v1.1.0.json",
+  "version": "v1.1.0",
+  "entity": {
+    "type": "individual",
+    "role": "maintainer",
+    "name": "Sung Hun Kwag",
+    "email": "sunghunkwag@gmail.com",
+    "phone": "",
+    "description": "Independent AI systems researcher. I build CPU-runnable experimental AI systems that treat failure as signal, not noise. My work focuses on recursion-aware architectures, operator-program synthesis, validation-only evaluation, and attention-free sequence models. I maintain several open-source repositories exploring alternative neural system designs under extreme compute constraints.",
+    "webpageUrl": {
+      "url": "https://sunghunkwag.github.io/",
+      "wellKnown": ""
+    }
+  },
+  "projects": [
+    {
+      "guid": "attention-free-sequence-model",
+      "name": "Attention-Free Sequence Model Framework",
+      "description": "An experimental open-source framework for exploring attention-free neural sequence architectures. The project implements multiple alternative designs (gated shift mixers, residual routing, recurrent cores) alongside benchmarking tools for algorithmic sequence tasks. It provides documented implementations, training pipelines, and evaluation suites to help researchers understand where attention-free inductive biases succeed or fail, without the O(n^2) scaling of standard Transformers. All code is MIT-licensed and designed to be CPU-runnable for accessibility.",
+      "webpageUrl": {
+        "url": "https://github.com/sunghunkwag/attention-free-sequence-model",
+        "wellKnown": "https://raw.githubusercontent.com/sunghunkwag/attention-free-sequence-model/main/funding.json"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/sunghunkwag/attention-free-sequence-model",
+        "wellKnown": "https://raw.githubusercontent.com/sunghunkwag/attention-free-sequence-model/main/funding.json"
+      },
+      "licenses": [
+        "spdx:MIT"
+      ],
+      "tags": [
+        "achine-learning",
+        "sequence-modeling",
+        "attention-free",
+        "neural-architecture",
+        "python",
+        "framework",
+        "benchmarking",
+        "experimental"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "transferwise",
+        "type": "Wire transfer / Wise / bank",
+        "address": "sunghunkwag@gmail.com"
+      }
+    ],
+    "plans": [
+      {
+        "guid": "6-month-dev-support",
+        "amount": 5000,
+        "currency": "USD",
+        "interval": "6 months",
+        "projectGuids": [
+          "attention-free-sequence-model"
+        ],
+        "purpose": "To cover 6 months of dedicated development time for expanding the attention-free sequence model framework: implementing new architecture variants, extending the benchmark suite with compositional and long-horizon tasks, documenting failure modes, and maintaining the open-source repository. The funding would directly support living expenses during this period."
+      }
+    ]
+  }
+}
